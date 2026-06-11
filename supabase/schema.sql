@@ -9,6 +9,7 @@ end
 $$;
 
 alter type public.game_status add value if not exists 'archived';
+alter type public.game_status add value if not exists 'live';
 
 create table public.games (
   id uuid primary key default gen_random_uuid(),
