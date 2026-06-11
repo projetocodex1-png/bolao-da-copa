@@ -15,6 +15,7 @@ export function statusLabel(status: string) {
   const labels: Record<string, string> = {
     draft: "Rascunho",
     open: "Aberto",
+    live: "Jogo rolando",
     closed: "Fechado",
     finished: "Finalizado",
     archived: "Arquivado"

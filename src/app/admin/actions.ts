@@ -202,3 +202,16 @@ export async function deleteGame(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/admin");
 }
+
+export async function deletePrediction(formData: FormData) {
+  const supabase = await requireAdmin();
+  const id = readRequired(formData, "id");
+  const gameId = readRequired(formData, "game_id");
+
+  const { error } = await supabase.from("predictions").delete().eq("id", id).eq("game_id", gameId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/");
+  revalidatePath(`/games/${gameId}`);
+  revalidatePath(`/admin/games/${gameId}/edit`);
+}

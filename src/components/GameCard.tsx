@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CalendarDays, Trophy } from "lucide-react";
 import { formatDateTime } from "@/lib/format";
+import { getEffectiveStatus } from "@/lib/games";
 import type { Game, Prediction } from "@/lib/types";
 import { findWinningPredictions } from "@/lib/scoring";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -15,12 +16,13 @@ export function GameCard({
   predictions?: Prediction[];
 }) {
   const winners = findWinningPredictions(game, predictions);
+  const effectiveStatus = getEffectiveStatus(game);
 
   return (
     <article className="card">
       <div className="meta">
-        <StatusBadge status={game.status} />
-        {game.status === "open" ? <Countdown deadline={game.prediction_deadline} /> : null}
+        <StatusBadge game={game} />
+        {effectiveStatus === "open" ? <Countdown deadline={game.prediction_deadline} /> : null}
       </div>
       <div className="matchup">
         <TeamName game={game} side="home" />
@@ -54,7 +56,7 @@ export function GameCard({
       ) : (
         <div className="prediction-strip muted-strip">Ninguem cravou ainda. Seja o primeiro.</div>
       )}
-      {game.status === "finished" ? (
+      {effectiveStatus === "finished" ? (
         <div className="meta">
           <strong>
             {game.home_score} x {game.away_score}

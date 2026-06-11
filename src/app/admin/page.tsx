@@ -6,6 +6,7 @@ import { archiveGame, setGameStatus } from "@/app/admin/actions";
 import { DeleteGameButton } from "@/components/DeleteGameButton";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatDateTime } from "@/lib/format";
+import { syncGameStatuses } from "@/lib/games";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Game } from "@/lib/types";
 
@@ -13,6 +14,7 @@ export default async function AdminDashboardPage() {
   const supabase = createSupabaseServerClient();
   const { data: user } = await supabase.auth.getUser();
   if (!user.user) redirect("/admin/login");
+  await syncGameStatuses(supabase);
 
   const { data: games, error } = await supabase
     .from("games")
@@ -64,7 +66,7 @@ export default async function AdminDashboardPage() {
                   </td>
                   <td>{formatDateTime(game.match_datetime)}</td>
                   <td>
-                    <StatusBadge status={game.status} />
+                    <StatusBadge game={game} />
                   </td>
                   <td>
                     <div className="nav">
@@ -72,6 +74,7 @@ export default async function AdminDashboardPage() {
                         <Pencil size={16} aria-hidden /> Editar
                       </Link>
                       {game.status !== "open" &&
+                      game.status !== "live" &&
                       game.status !== "finished" &&
                       game.status !== "archived" ? (
                         <form action={setGameStatus}>
@@ -82,7 +85,7 @@ export default async function AdminDashboardPage() {
                           </button>
                         </form>
                       ) : null}
-                      {game.status === "open" ? (
+                      {game.status === "open" || game.status === "live" ? (
                         <form action={setGameStatus}>
                           <input type="hidden" name="id" value={game.id} />
                           <input type="hidden" name="status" value="closed" />

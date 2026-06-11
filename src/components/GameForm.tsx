@@ -88,6 +88,7 @@ export function GameForm({ game }: { game?: Game }) {
         <select id="status" name="status" defaultValue={game?.status ?? "draft"}>
           <option value="draft">Rascunho</option>
           <option value="open">Aberto</option>
+          <option value="live">Jogo rolando</option>
           <option value="closed">Fechado</option>
           <option value="finished">Finalizado</option>
           <option value="archived">Arquivado</option>

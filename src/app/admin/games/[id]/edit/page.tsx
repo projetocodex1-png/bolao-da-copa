@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
+import { DeletePredictionButton } from "@/components/DeletePredictionButton";
 import { GameForm } from "@/components/GameForm";
+import { formatDateTime } from "@/lib/format";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { Game } from "@/lib/types";
+import type { GameWithPredictions } from "@/lib/types";
 
 export default async function EditGamePage({ params }: { params: { id: string } }) {
   const supabase = createSupabaseServerClient();
@@ -12,7 +14,7 @@ export default async function EditGamePage({ params }: { params: { id: string } 
 
   const { data: game, error } = await supabase
     .from("games")
-    .select("*")
+    .select("*, predictions(*)")
     .eq("id", params.id)
     .single();
 
@@ -31,7 +33,45 @@ export default async function EditGamePage({ params }: { params: { id: string } 
       </header>
       <section className="panel">
         <h1>Editar jogo</h1>
-        <GameForm game={game as Game} />
+        <GameForm game={game as GameWithPredictions} />
+      </section>
+
+      <section className="panel admin-section">
+        <h2>Palpites enviados</h2>
+        {(game as GameWithPredictions).predictions.length ? (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Participante</th>
+                  <th>Palpite</th>
+                  <th>Enviado</th>
+                  <th>Acoes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(game as GameWithPredictions).predictions.map((prediction) => (
+                  <tr key={prediction.id}>
+                    <td>{prediction.participant_name}</td>
+                    <td>
+                      {prediction.home_score_guess} x {prediction.away_score_guess}
+                    </td>
+                    <td>{formatDateTime(prediction.created_at)}</td>
+                    <td>
+                      <DeletePredictionButton
+                        predictionId={prediction.id}
+                        gameId={(game as GameWithPredictions).id}
+                        participantName={prediction.participant_name}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="empty compact">Ainda nao tem palpite pra esse jogo.</div>
+        )}
       </section>
     </main>
   );

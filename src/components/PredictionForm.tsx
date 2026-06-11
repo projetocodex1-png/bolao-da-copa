@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { submitPrediction, type PredictionFormState } from "@/app/actions";
 import { TeamName } from "@/components/TeamName";
+import { getEffectiveStatus } from "@/lib/games";
 import type { Game } from "@/lib/types";
 
 const initialState: PredictionFormState = {
@@ -23,7 +24,7 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
 }
 
 export function PredictionForm({ game }: { game: Game }) {
-  const isOpen = game.status === "open" && new Date(game.prediction_deadline) > new Date();
+  const isOpen = getEffectiveStatus(game) === "open";
   const [state, formAction] = useFormState(submitPrediction, initialState);
   const [showModal, setShowModal] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);

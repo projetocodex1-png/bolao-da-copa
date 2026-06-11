@@ -6,6 +6,7 @@ import { PredictionForm } from "@/components/PredictionForm";
 import { StatusBadge } from "@/components/StatusBadge";
 import { TeamName } from "@/components/TeamName";
 import { formatDateTime } from "@/lib/format";
+import { getEffectiveStatus, syncGameStatuses } from "@/lib/games";
 import { findWinningPredictions } from "@/lib/scoring";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { GameWithPredictions } from "@/lib/types";
@@ -16,6 +17,7 @@ export default async function GamePage({
   params: { id: string };
 }) {
   const supabase = createSupabaseServerClient();
+  await syncGameStatuses(supabase);
   const { data, error } = await supabase
     .from("games")
     .select("*, predictions(*)")
@@ -25,9 +27,13 @@ export default async function GamePage({
   if (error || !data) notFound();
 
   const game = data as GameWithPredictions;
+  const effectiveStatus = getEffectiveStatus(game);
   const winners = findWinningPredictions(game, game.predictions);
   const showPredictions =
-    game.status === "open" || game.status === "closed" || game.status === "finished";
+    effectiveStatus === "open" ||
+    effectiveStatus === "live" ||
+    effectiveStatus === "closed" ||
+    effectiveStatus === "finished";
 
   return (
     <main className="shell">
@@ -44,8 +50,8 @@ export default async function GamePage({
       <section className="split">
         <div className="panel">
           <div className="meta">
-            <StatusBadge status={game.status} />
-            {game.status === "open" ? <Countdown deadline={game.prediction_deadline} /> : null}
+            <StatusBadge game={game} />
+            {effectiveStatus === "open" ? <Countdown deadline={game.prediction_deadline} /> : null}
           </div>
           <h1 className="game-title">
             <TeamName game={game} side="home" />
@@ -60,7 +66,7 @@ export default async function GamePage({
             <span>Prazo: {formatDateTime(game.prediction_deadline)}</span>
           </div>
 
-          {game.status === "finished" ? (
+          {effectiveStatus === "finished" ? (
             <div className="result-box winner">
               <h2>
                 Resultado: {game.home_score} x {game.away_score}
@@ -118,7 +124,11 @@ export default async function GamePage({
                   </tbody>
                 </table>
               ) : (
-                <div className="empty compact">Ninguem mandou palpite ainda. Ta aberto o baile.</div>
+                <div className="empty compact">
+                  {effectiveStatus === "live"
+                    ? "A bola ja ta rolando, mas ninguem tinha cravado."
+                    : "Ninguem mandou palpite ainda. Ta aberto o baile."}
+                </div>
               )}
             </div>
           ) : null}

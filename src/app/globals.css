@@ -336,6 +336,10 @@ select {
   background: var(--green);
 }
 
+.badge.live {
+  background: var(--yellow);
+}
+
 .badge.closed,
 .badge.draft,
 .badge.archived {
@@ -578,6 +582,16 @@ th {
 
 .empty.compact {
   min-height: 110px;
+}
+
+.compact-button {
+  min-height: 34px;
+  padding: 0 10px;
+  font-size: 0.9rem;
+}
+
+.admin-section {
+  margin-top: 18px;
 }
 
 @media (max-width: 780px) {

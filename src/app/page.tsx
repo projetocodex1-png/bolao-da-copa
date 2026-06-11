@@ -1,15 +1,17 @@
 import Link from "next/link";
 import { Shield, Trophy } from "lucide-react";
 import { GameCard } from "@/components/GameCard";
+import { syncGameStatuses } from "@/lib/games";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { GameWithPredictions } from "@/lib/types";
 
 export default async function HomePage() {
   const supabase = createSupabaseServerClient();
+  await syncGameStatuses(supabase);
   const { data: games, error } = await supabase
     .from("games")
     .select("*, predictions(*)")
-    .in("status", ["open", "closed", "finished"])
+    .in("status", ["open", "live", "closed", "finished"])
     .order("match_datetime", { ascending: true });
 
   if (error) throw new Error(error.message);

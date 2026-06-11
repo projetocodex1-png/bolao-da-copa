@@ -1,4 +1,4 @@
-export type GameStatus = "draft" | "open" | "closed" | "finished" | "archived";
+export type GameStatus = "draft" | "open" | "live" | "closed" | "finished" | "archived";
 
 export type Game = {
   id: string;
