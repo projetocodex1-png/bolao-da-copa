@@ -12,15 +12,17 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { GameWithPredictions } from "@/lib/types";
 
 export default async function GamePage({
-  params
+  params,
+  searchParams
 }: {
   params: { id: string };
+  searchParams: { from?: string };
 }) {
   const supabase = createSupabaseServerClient();
   await syncGameStatuses(supabase);
   const { data, error } = await supabase
     .from("games")
-    .select("*, predictions(*)")
+    .select("*, predictions(*), groups(slug)")
     .eq("id", params.id)
     .single();
 
@@ -29,6 +31,9 @@ export default async function GamePage({
   const game = data as GameWithPredictions;
   const effectiveStatus = getEffectiveStatus(game);
   const winners = findWinningPredictions(game, game.predictions);
+  const groupSlug = (data.groups as { slug?: string } | null)?.slug;
+  const safeFrom = searchParams.from?.startsWith("/grupos/") ? searchParams.from : null;
+  const backHref = safeFrom ?? (groupSlug ? `/grupos/${groupSlug}` : "/");
   const showPredictions =
     effectiveStatus === "open" ||
     effectiveStatus === "live" ||
@@ -38,11 +43,11 @@ export default async function GamePage({
   return (
     <main className="shell">
       <header className="topbar">
-        <Link href="/" className="brand">
+        <Link href={backHref} className="brand">
           <span className="brand-mark">B</span>
           <span>Bolao da Copa</span>
         </Link>
-        <Link className="button secondary" href="/">
+        <Link className="button secondary" href={backHref}>
           <ArrowLeft size={17} aria-hidden /> Voltar
         </Link>
       </header>

@@ -605,11 +605,20 @@ th {
   margin-top: 18px;
 }
 
+.group-edit-form {
+  display: grid;
+  grid-template-columns: minmax(140px, 0.8fr) minmax(140px, 0.8fr) minmax(180px, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+  min-width: 720px;
+}
+
 @media (max-width: 780px) {
   .hero,
   .split,
   .team-fields,
-  .team-fieldset {
+  .team-fieldset,
+  .group-edit-form {
     grid-template-columns: 1fr;
   }
 

@@ -90,7 +90,12 @@ export default async function GroupPage({ params }: { params: { slug: string } }
         {typedGames.length ? (
           <div className="grid">
             {typedGames.map((game) => (
-              <GameCard key={game.id} game={game} predictions={game.predictions} />
+              <GameCard
+                key={game.id}
+                game={game}
+                predictions={game.predictions}
+                href={`/games/${game.id}?from=/grupos/${typedGroup.slug}`}
+              />
             ))}
           </div>
         ) : (

@@ -10,10 +10,12 @@ import { TeamName } from "@/components/TeamName";
 
 export function GameCard({
   game,
-  predictions = []
+  predictions = [],
+  href
 }: {
   game: Game;
   predictions?: Prediction[];
+  href?: string;
 }) {
   const winners = findWinningPredictions(game, predictions);
   const effectiveStatus = getEffectiveStatus(game);
@@ -75,7 +77,7 @@ export function GameCard({
         </div>
       ) : null}
       {canEnter ? (
-        <Link className="button" href={`/games/${game.id}`}>
+        <Link className="button" href={href ?? `/games/${game.id}`}>
           Entrar no bolao
         </Link>
       ) : (

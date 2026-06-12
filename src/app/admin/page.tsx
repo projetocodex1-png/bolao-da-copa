@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { Archive, ExternalLink, LogOut, Pencil, Plus, RotateCcw } from "lucide-react";
+import { Archive, LogOut, Pencil, Plus, RotateCcw } from "lucide-react";
 import { redirect } from "next/navigation";
 import { signOutAdmin } from "@/app/actions";
-import { archiveGame, createGroup, setGameStatus } from "@/app/admin/actions";
+import { archiveGame, setGameStatus } from "@/app/admin/actions";
 import { DeleteGameButton } from "@/components/DeleteGameButton";
+import { GroupManager } from "@/components/GroupManager";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatDateTime } from "@/lib/format";
 import { syncGameStatuses } from "@/lib/games";
@@ -71,61 +72,8 @@ export default async function AdminDashboardPage() {
               Rode a migracao 006 no Supabase para liberar grupos e status Em breve.
             </div>
           ) : (
-            <form action={createGroup} className="form">
-              <div className="score-fields">
-                <div className="field">
-                  <label htmlFor="name">Nome do grupo</label>
-                  <input id="name" name="name" placeholder="Amigos da firma" required />
-                </div>
-                <div className="field">
-                  <label htmlFor="slug">Slug do link</label>
-                  <input id="slug" name="slug" placeholder="amigos-da-firma" />
-                </div>
-              </div>
-              <div className="field">
-                <label htmlFor="description">Descricao</label>
-                <input id="description" name="description" placeholder="Opcional" />
-              </div>
-              <button className="button" type="submit">
-                <Plus size={17} aria-hidden /> Criar grupo
-              </button>
-            </form>
+            <GroupManager groups={(groups ?? []) as Group[]} />
           )}
-
-          {groupsReady && (groups as Group[] | null)?.length ? (
-            <div className="table-wrap admin-section">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Grupo</th>
-                    <th>Link publico</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(groups as Group[]).map((group) => (
-                    <tr key={group.id}>
-                      <td>
-                        <strong>{group.name}</strong>
-                        {group.description ? (
-                          <>
-                            <br />
-                            {group.description}
-                          </>
-                        ) : null}
-                      </td>
-                      <td>
-                        <Link className="button secondary" href={`/grupos/${group.slug}`}>
-                          <ExternalLink size={16} aria-hidden /> /grupos/{group.slug}
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : groupsReady ? (
-            <div className="empty compact admin-section">Nenhum grupo criado ainda.</div>
-          ) : null}
         </section>
 
         <div className="table-wrap">

@@ -7,6 +7,11 @@ import type { GameStatus } from "@/lib/types";
 
 const TEAM_FLAGS_BUCKET = "team-flags";
 
+export type GroupFormState = {
+  status: "idle" | "success" | "error";
+  message: string;
+};
+
 async function requireAdmin() {
   const supabase = createSupabaseServerClient();
   const { data } = await supabase.auth.getUser();
@@ -107,6 +112,20 @@ async function getGameGroupSlug(
   if (error) return null;
 
   return (data?.groups as { slug?: string } | null)?.slug ?? null;
+}
+
+async function groupNameAlreadyExists(
+  supabase: Awaited<ReturnType<typeof requireAdmin>>,
+  name: string,
+  exceptId?: string
+) {
+  const { data, error } = await supabase.from("groups").select("id, name");
+  if (error) return false;
+
+  const normalizedName = name.trim().toLowerCase();
+  return (data as Array<{ id: string; name: string }>).some(
+    (group) => group.id !== exceptId && group.name.trim().toLowerCase() === normalizedName
+  );
 }
 
 async function readGamePayload(
@@ -280,4 +299,108 @@ export async function createGroup(formData: FormData) {
 
   revalidatePath("/admin");
   revalidatePath(`/grupos/${slug}`);
+}
+
+function groupErrorMessage(error: { code?: string; message?: string } | null) {
+  if (error?.code === "23505") return "Grupo ja registrado. Escolha outro nome ou link.";
+  return error?.message ?? "Nao consegui salvar o grupo. Tenta de novo.";
+}
+
+export async function createGroupWithState(
+  _previousState: GroupFormState,
+  formData: FormData
+): Promise<GroupFormState> {
+  const supabase = await requireAdmin();
+
+  try {
+    const name = readRequired(formData, "name");
+    const requestedSlug = String(formData.get("slug") ?? "").trim();
+    const description = String(formData.get("description") ?? "").trim() || null;
+    const slug = slugify(requestedSlug || name);
+
+    if (!slug) return { status: "error", message: "Informe um nome de grupo valido." };
+    if (await groupNameAlreadyExists(supabase, name)) {
+      return { status: "error", message: "Grupo ja registrado. Escolha outro nome." };
+    }
+
+    const { error } = await supabase.from("groups").insert({
+      name,
+      slug,
+      description
+    });
+
+    if (error) return { status: "error", message: groupErrorMessage(error) };
+
+    revalidatePath("/admin");
+    revalidatePath(`/grupos/${slug}`);
+    return { status: "success", message: "Grupo criado com sucesso." };
+  } catch (error) {
+    return {
+      status: "error",
+      message: error instanceof Error ? error.message : "Nao consegui criar o grupo."
+    };
+  }
+}
+
+export async function updateGroupWithState(
+  _previousState: GroupFormState,
+  formData: FormData
+): Promise<GroupFormState> {
+  const supabase = await requireAdmin();
+
+  try {
+    const id = readRequired(formData, "id");
+    const name = readRequired(formData, "name");
+    const previousSlug = readRequired(formData, "previous_slug");
+    const requestedSlug = String(formData.get("slug") ?? "").trim();
+    const description = String(formData.get("description") ?? "").trim() || null;
+    const slug = slugify(requestedSlug || name);
+
+    if (!slug) return { status: "error", message: "Informe um link valido para o grupo." };
+    if (await groupNameAlreadyExists(supabase, name, id)) {
+      return { status: "error", message: "Grupo ja registrado. Escolha outro nome." };
+    }
+
+    const { error } = await supabase
+      .from("groups")
+      .update({ name, slug, description })
+      .eq("id", id);
+
+    if (error) return { status: "error", message: groupErrorMessage(error) };
+
+    revalidatePath("/admin");
+    revalidatePath(`/grupos/${previousSlug}`);
+    revalidatePath(`/grupos/${slug}`);
+    return { status: "success", message: "Grupo atualizado com sucesso." };
+  } catch (error) {
+    return {
+      status: "error",
+      message: error instanceof Error ? error.message : "Nao consegui atualizar o grupo."
+    };
+  }
+}
+
+export async function deleteGroupWithState(
+  _previousState: GroupFormState,
+  formData: FormData
+): Promise<GroupFormState> {
+  const supabase = await requireAdmin();
+
+  try {
+    const id = readRequired(formData, "id");
+    const slug = readRequired(formData, "slug");
+
+    const { error } = await supabase.from("groups").delete().eq("id", id);
+
+    if (error) return { status: "error", message: groupErrorMessage(error) };
+
+    revalidatePath("/admin");
+    revalidatePath(`/grupos/${slug}`);
+    return { status: "success", message: "Grupo excluido com sucesso." };
+  } catch (error) {
+    return {
+      status: "error",
+      message: error instanceof Error ? error.message : "Nao consegui excluir o grupo."
+    };
+  }
 }
