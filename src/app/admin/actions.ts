@@ -180,6 +180,7 @@ async function readGamePayload(
     max_same_score_guesses: maxSameScoreGuesses,
     entry_fee: readOptionalText(formData, "entry_fee"),
     pix_info: readOptionalText(formData, "pix_info"),
+    receipt_whatsapp: readOptionalText(formData, "receipt_whatsapp"),
     home_score: status === "finished" ? homeScore : null,
     away_score: status === "finished" ? awayScore : null
   };

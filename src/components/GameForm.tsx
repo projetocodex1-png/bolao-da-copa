@@ -148,6 +148,15 @@ export function GameForm({
           />
         </div>
       </div>
+      <div className="field">
+        <label htmlFor="receipt_whatsapp">Enviar comprovante para</label>
+        <input
+          id="receipt_whatsapp"
+          name="receipt_whatsapp"
+          placeholder="WhatsApp com DDI. Ex: 5598999999999"
+          defaultValue={game?.receipt_whatsapp ?? ""}
+        />
+      </div>
       <div className="score-fields">
         <div className="field">
           <label htmlFor="home_score">Placar real mandante</label>

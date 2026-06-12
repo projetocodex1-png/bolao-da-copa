@@ -500,6 +500,13 @@ select {
   color: var(--text);
 }
 
+.payment-info a {
+  color: var(--green);
+  font-weight: 900;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .muted-strip {
   color: var(--muted);
 }

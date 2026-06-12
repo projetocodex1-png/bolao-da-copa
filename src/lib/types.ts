@@ -23,6 +23,7 @@ export type Game = {
   max_same_score_guesses: number | null;
   entry_fee: string | null;
   pix_info: string | null;
+  receipt_whatsapp: string | null;
   home_score: number | null;
   away_score: number | null;
   created_at: string;

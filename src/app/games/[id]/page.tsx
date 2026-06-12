@@ -11,6 +11,12 @@ import { findWinningPredictions } from "@/lib/scoring";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { GameWithPredictions } from "@/lib/types";
 
+function whatsappLink(value: string | null) {
+  const digits = value?.replace(/\D/g, "") ?? "";
+  if (!digits) return null;
+  return `https://wa.me/${digits}`;
+}
+
 export default async function GamePage({
   params,
   searchParams
@@ -34,7 +40,8 @@ export default async function GamePage({
   const groupSlug = (data.groups as { slug?: string } | null)?.slug;
   const safeFrom = searchParams.from?.startsWith("/grupos/") ? searchParams.from : null;
   const backHref = safeFrom ?? (groupSlug ? `/grupos/${groupSlug}` : "/");
-  const showPaymentInfo = Boolean(game.entry_fee || game.pix_info);
+  const receiptWhatsappLink = whatsappLink(game.receipt_whatsapp);
+  const showPaymentInfo = Boolean(game.entry_fee || game.pix_info || receiptWhatsappLink);
   const showPredictions =
     effectiveStatus === "open" ||
     effectiveStatus === "live" ||
@@ -81,6 +88,14 @@ export default async function GamePage({
               {game.pix_info ? (
                 <span>
                   <strong>Pix:</strong> {game.pix_info}
+                </span>
+              ) : null}
+              {receiptWhatsappLink ? (
+                <span>
+                  <strong>Enviar comprovante para:</strong>{" "}
+                  <a href={receiptWhatsappLink} target="_blank" rel="noreferrer">
+                    WhatsApp
+                  </a>
                 </span>
               ) : null}
             </div>

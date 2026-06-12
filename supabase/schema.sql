@@ -35,6 +35,7 @@ create table public.games (
   max_same_score_guesses integer check (max_same_score_guesses is null or max_same_score_guesses > 0),
   entry_fee text,
   pix_info text,
+  receipt_whatsapp text,
   home_score integer check (home_score >= 0),
   away_score integer check (away_score >= 0),
   created_at timestamptz not null default now(),
