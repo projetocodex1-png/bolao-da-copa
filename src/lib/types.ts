@@ -1,7 +1,17 @@
-export type GameStatus = "draft" | "open" | "live" | "closed" | "finished" | "archived";
+export type GameStatus = "draft" | "soon" | "open" | "live" | "closed" | "finished" | "archived";
+
+export type Group = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+};
 
 export type Game = {
   id: string;
+  group_id: string | null;
   home_team: string;
   home_team_flag_url: string | null;
   away_team: string;

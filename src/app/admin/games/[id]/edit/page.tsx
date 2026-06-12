@@ -5,7 +5,7 @@ import { DeletePredictionButton } from "@/components/DeletePredictionButton";
 import { GameForm } from "@/components/GameForm";
 import { formatDateTime } from "@/lib/format";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { GameWithPredictions } from "@/lib/types";
+import type { GameWithPredictions, Group } from "@/lib/types";
 
 export default async function EditGamePage({ params }: { params: { id: string } }) {
   const supabase = createSupabaseServerClient();
@@ -20,6 +20,12 @@ export default async function EditGamePage({ params }: { params: { id: string } 
 
   if (error || !game) notFound();
 
+  const { data: groups, error: groupsError } = await supabase
+    .from("groups")
+    .select("*")
+    .order("name");
+  const groupsReady = !groupsError;
+
   return (
     <main className="shell">
       <header className="topbar">
@@ -33,7 +39,16 @@ export default async function EditGamePage({ params }: { params: { id: string } 
       </header>
       <section className="panel">
         <h1>Editar jogo</h1>
-        <GameForm game={game as GameWithPredictions} />
+        {!groupsReady ? (
+          <div className="empty compact admin-section">
+            Rode a migracao 006 no Supabase para liberar grupos e status Em breve.
+          </div>
+        ) : null}
+        <GameForm
+          game={game as GameWithPredictions}
+          groups={(groups ?? []) as Group[]}
+          supportsUpcoming={groupsReady}
+        />
       </section>
 
       <section className="panel admin-section">

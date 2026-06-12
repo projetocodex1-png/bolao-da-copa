@@ -10,9 +10,20 @@ $$;
 
 alter type public.game_status add value if not exists 'archived';
 alter type public.game_status add value if not exists 'live';
+alter type public.game_status add value if not exists 'soon';
+
+create table public.groups (
+  id uuid primary key default gen_random_uuid(),
+  name text not null check (length(trim(name)) between 2 and 80),
+  slug text not null unique check (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'),
+  description text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
 
 create table public.games (
   id uuid primary key default gen_random_uuid(),
+  group_id uuid references public.groups(id) on delete set null,
   home_team text not null check (length(trim(home_team)) > 0),
   home_team_flag_url text,
   away_team text not null check (length(trim(away_team)) > 0),
@@ -48,6 +59,7 @@ on public.predictions (game_id, lower(trim(participant_name)));
 
 create index predictions_game_created_at_idx on public.predictions (game_id, created_at);
 create index games_status_datetime_idx on public.games (status, match_datetime);
+create index games_group_datetime_idx on public.games (group_id, match_datetime);
 
 create or replace function public.touch_updated_at()
 returns trigger
@@ -61,6 +73,10 @@ $$;
 
 create trigger games_touch_updated_at
 before update on public.games
+for each row execute procedure public.touch_updated_at();
+
+create trigger groups_touch_updated_at
+before update on public.groups
 for each row execute procedure public.touch_updated_at();
 
 create or replace function public.predictions_are_open(target_game_id uuid)
@@ -80,11 +96,22 @@ as $$
 $$;
 
 alter table public.games enable row level security;
+alter table public.groups enable row level security;
 alter table public.predictions enable row level security;
+
+create policy "Public can read groups"
+on public.groups for select
+using (true);
+
+create policy "Authenticated admins manage groups"
+on public.groups for all
+to authenticated
+using (true)
+with check (true);
 
 create policy "Public can read visible games"
 on public.games for select
-using (status in ('open', 'closed', 'finished') or auth.role() = 'authenticated');
+using (status in ('soon', 'open', 'live', 'closed', 'finished') or auth.role() = 'authenticated');
 
 create policy "Authenticated admins manage games"
 on public.games for all
@@ -99,7 +126,7 @@ using (
     select 1
     from public.games
     where games.id = predictions.game_id
-      and games.status in ('open', 'closed', 'finished')
+      and games.status in ('open', 'live', 'closed', 'finished')
   )
   or auth.role() = 'authenticated'
 );

@@ -45,6 +45,11 @@ function readExistingUrl(formData: FormData, key: string) {
   return value || null;
 }
 
+function readOptionalUuid(formData: FormData, key: string) {
+  const value = String(formData.get(key) ?? "").trim();
+  return value || null;
+}
+
 function slugify(value: string) {
   return value
     .normalize("NFD")
@@ -89,11 +94,27 @@ async function uploadTeamFlag(
   return data.publicUrl;
 }
 
+async function getGameGroupSlug(
+  supabase: Awaited<ReturnType<typeof requireAdmin>>,
+  gameId: string
+) {
+  const { data, error } = await supabase
+    .from("games")
+    .select("groups(slug)")
+    .eq("id", gameId)
+    .single();
+
+  if (error) return null;
+
+  return (data?.groups as { slug?: string } | null)?.slug ?? null;
+}
+
 async function readGamePayload(
   supabase: Awaited<ReturnType<typeof requireAdmin>>,
   formData: FormData
 ) {
   const status = readRequired(formData, "status") as GameStatus;
+  const groupId = formData.has("group_id") ? readOptionalUuid(formData, "group_id") : undefined;
   const homeScore = readNullableScore(formData, "home_score");
   const awayScore = readNullableScore(formData, "away_score");
   const maxSameScoreGuesses = readNullableLimit(formData, "max_same_score_guesses");
@@ -111,6 +132,7 @@ async function readGamePayload(
   }
 
   return {
+    ...(groupId !== undefined ? { group_id: groupId } : {}),
     home_team: homeTeam,
     home_team_flag_url: await uploadTeamFlag(
       supabase,
@@ -141,10 +163,12 @@ export async function createGame(formData: FormData) {
   const supabase = await requireAdmin();
   const payload = await readGamePayload(supabase, formData);
 
-  const { error } = await supabase.from("games").insert(payload);
+  const { data, error } = await supabase.from("games").insert(payload).select("id").single();
   if (error) throw new Error(error.message);
 
   revalidatePath("/");
+  const groupSlug = data?.id ? await getGameGroupSlug(supabase, data.id) : null;
+  if (groupSlug) revalidatePath(`/grupos/${groupSlug}`);
   revalidatePath("/admin");
   redirect("/admin");
 }
@@ -152,13 +176,22 @@ export async function createGame(formData: FormData) {
 export async function updateGame(formData: FormData) {
   const supabase = await requireAdmin();
   const id = readRequired(formData, "id");
+  const previousGroupSlug = await getGameGroupSlug(supabase, id);
   const payload = await readGamePayload(supabase, formData);
 
-  const { error } = await supabase.from("games").update(payload).eq("id", id);
+  const { error } = await supabase
+    .from("games")
+    .update(payload)
+    .eq("id", id)
+    .select("id")
+    .single();
   if (error) throw new Error(error.message);
 
   revalidatePath("/");
   revalidatePath(`/games/${id}`);
+  const groupSlug = await getGameGroupSlug(supabase, id);
+  if (previousGroupSlug) revalidatePath(`/grupos/${previousGroupSlug}`);
+  if (groupSlug) revalidatePath(`/grupos/${groupSlug}`);
   revalidatePath("/admin");
   redirect("/admin");
 }
@@ -167,6 +200,7 @@ export async function setGameStatus(formData: FormData) {
   const supabase = await requireAdmin();
   const id = readRequired(formData, "id");
   const status = readRequired(formData, "status") as GameStatus;
+  const groupSlug = await getGameGroupSlug(supabase, id);
 
   const { error } = await supabase
     .from("games")
@@ -177,29 +211,34 @@ export async function setGameStatus(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath(`/games/${id}`);
+  if (groupSlug) revalidatePath(`/grupos/${groupSlug}`);
   revalidatePath("/admin");
 }
 
 export async function archiveGame(formData: FormData) {
   const supabase = await requireAdmin();
   const id = readRequired(formData, "id");
+  const groupSlug = await getGameGroupSlug(supabase, id);
 
   const { error } = await supabase.from("games").update({ status: "archived" }).eq("id", id);
   if (error) throw new Error(error.message);
 
   revalidatePath("/");
   revalidatePath(`/games/${id}`);
+  if (groupSlug) revalidatePath(`/grupos/${groupSlug}`);
   revalidatePath("/admin");
 }
 
 export async function deleteGame(formData: FormData) {
   const supabase = await requireAdmin();
   const id = readRequired(formData, "id");
+  const groupSlug = await getGameGroupSlug(supabase, id);
 
   const { error } = await supabase.from("games").delete().eq("id", id);
   if (error) throw new Error(error.message);
 
   revalidatePath("/");
+  if (groupSlug) revalidatePath(`/grupos/${groupSlug}`);
   revalidatePath("/admin");
 }
 
@@ -207,11 +246,38 @@ export async function deletePrediction(formData: FormData) {
   const supabase = await requireAdmin();
   const id = readRequired(formData, "id");
   const gameId = readRequired(formData, "game_id");
+  const groupSlug = await getGameGroupSlug(supabase, gameId);
 
   const { error } = await supabase.from("predictions").delete().eq("id", id).eq("game_id", gameId);
   if (error) throw new Error(error.message);
 
   revalidatePath("/");
   revalidatePath(`/games/${gameId}`);
+  if (groupSlug) revalidatePath(`/grupos/${groupSlug}`);
   revalidatePath(`/admin/games/${gameId}/edit`);
+}
+
+export async function createGroup(formData: FormData) {
+  const supabase = await requireAdmin();
+  const name = readRequired(formData, "name");
+  const requestedSlug = String(formData.get("slug") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim() || null;
+  const slug = slugify(requestedSlug || name);
+
+  if (!slug) throw new Error("Informe um nome de grupo valido.");
+
+  const { error } = await supabase.from("groups").insert({
+    name,
+    slug,
+    description
+  });
+
+  if (error?.code === "23505") {
+    throw new Error("Ja existe um grupo com esse link. Escolha outro slug.");
+  }
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/admin");
+  revalidatePath(`/grupos/${slug}`);
 }

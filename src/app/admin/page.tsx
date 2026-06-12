@@ -1,14 +1,18 @@
 import Link from "next/link";
-import { Archive, LogOut, Pencil, Plus, RotateCcw } from "lucide-react";
+import { Archive, ExternalLink, LogOut, Pencil, Plus, RotateCcw } from "lucide-react";
 import { redirect } from "next/navigation";
 import { signOutAdmin } from "@/app/actions";
-import { archiveGame, setGameStatus } from "@/app/admin/actions";
+import { archiveGame, createGroup, setGameStatus } from "@/app/admin/actions";
 import { DeleteGameButton } from "@/components/DeleteGameButton";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatDateTime } from "@/lib/format";
 import { syncGameStatuses } from "@/lib/games";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { Game } from "@/lib/types";
+import type { Game, Group } from "@/lib/types";
+
+type AdminGame = Game & {
+  groups?: Pick<Group, "name" | "slug"> | null;
+};
 
 export default async function AdminDashboardPage() {
   const supabase = createSupabaseServerClient();
@@ -16,12 +20,27 @@ export default async function AdminDashboardPage() {
   if (!user.user) redirect("/admin/login");
   await syncGameStatuses(supabase);
 
-  const { data: games, error } = await supabase
+  let groupsReady = true;
+  let { data: games, error } = await supabase
     .from("games")
-    .select("*")
+    .select("*, groups(name, slug)")
     .order("match_datetime", { ascending: true });
 
+  if (error) {
+    const fallback = await supabase.from("games").select("*").order("match_datetime", { ascending: true });
+
+    groupsReady = false;
+    games = fallback.data;
+    error = fallback.error;
+  }
+
   if (error) throw new Error(error.message);
+
+  const { data: groups, error: groupsError } = groupsReady
+    ? await supabase.from("groups").select("*").order("name")
+    : { data: [], error: null };
+
+  if (groupsError) throw new Error(groupsError.message);
 
   return (
     <main className="shell">
@@ -44,18 +63,84 @@ export default async function AdminDashboardPage() {
 
       <section className="panel">
         <h1>Dashboard</h1>
+
+        <section className="admin-section">
+          <h2>Grupos</h2>
+          {!groupsReady ? (
+            <div className="empty compact admin-section">
+              Rode a migracao 006 no Supabase para liberar grupos e status Em breve.
+            </div>
+          ) : (
+            <form action={createGroup} className="form">
+              <div className="score-fields">
+                <div className="field">
+                  <label htmlFor="name">Nome do grupo</label>
+                  <input id="name" name="name" placeholder="Amigos da firma" required />
+                </div>
+                <div className="field">
+                  <label htmlFor="slug">Slug do link</label>
+                  <input id="slug" name="slug" placeholder="amigos-da-firma" />
+                </div>
+              </div>
+              <div className="field">
+                <label htmlFor="description">Descricao</label>
+                <input id="description" name="description" placeholder="Opcional" />
+              </div>
+              <button className="button" type="submit">
+                <Plus size={17} aria-hidden /> Criar grupo
+              </button>
+            </form>
+          )}
+
+          {groupsReady && (groups as Group[] | null)?.length ? (
+            <div className="table-wrap admin-section">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Grupo</th>
+                    <th>Link publico</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(groups as Group[]).map((group) => (
+                    <tr key={group.id}>
+                      <td>
+                        <strong>{group.name}</strong>
+                        {group.description ? (
+                          <>
+                            <br />
+                            {group.description}
+                          </>
+                        ) : null}
+                      </td>
+                      <td>
+                        <Link className="button secondary" href={`/grupos/${group.slug}`}>
+                          <ExternalLink size={16} aria-hidden /> /grupos/{group.slug}
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : groupsReady ? (
+            <div className="empty compact admin-section">Nenhum grupo criado ainda.</div>
+          ) : null}
+        </section>
+
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>Jogo</th>
+                <th>Grupo</th>
                 <th>Data</th>
                 <th>Status</th>
                 <th>Acoes</th>
               </tr>
             </thead>
             <tbody>
-              {(games as Game[] | null)?.map((game) => (
+              {(games as AdminGame[] | null)?.map((game) => (
                 <tr key={game.id}>
                   <td>
                     <strong>
@@ -63,6 +148,13 @@ export default async function AdminDashboardPage() {
                     </strong>
                     <br />
                     {game.phase}
+                  </td>
+                  <td>
+                    {game.groups ? (
+                      <Link href={`/grupos/${game.groups.slug}`}>{game.groups.name}</Link>
+                    ) : (
+                      "Geral"
+                    )}
                   </td>
                   <td>{formatDateTime(game.match_datetime)}</td>
                   <td>

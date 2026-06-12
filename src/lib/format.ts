@@ -14,6 +14,7 @@ export function toDatetimeLocalValue(value?: string | null) {
 export function statusLabel(status: string) {
   const labels: Record<string, string> = {
     draft: "Rascunho",
+    soon: "Em breve",
     open: "Aberto",
     live: "Jogo rolando",
     closed: "Fechado",

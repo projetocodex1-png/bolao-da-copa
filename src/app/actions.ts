@@ -39,7 +39,7 @@ export async function submitPrediction(
 
     const { data: game, error: gameError } = await supabase
       .from("games")
-      .select("id,status,prediction_deadline,max_same_score_guesses")
+      .select("id,status,prediction_deadline,max_same_score_guesses,groups(slug)")
       .eq("id", gameId)
       .single();
 
@@ -98,6 +98,8 @@ export async function submitPrediction(
 
     revalidatePath("/");
     revalidatePath(`/games/${gameId}`);
+    const groupSlug = (game.groups as { slug?: string } | null)?.slug;
+    if (groupSlug) revalidatePath(`/grupos/${groupSlug}`);
     return { status: "success", message: "Palpite recebido. Boa sorte na resenha." };
   } catch {
     return {

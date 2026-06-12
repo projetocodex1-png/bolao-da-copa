@@ -1,18 +1,30 @@
 import Link from "next/link";
 import { Shield, Trophy } from "lucide-react";
+import { notFound } from "next/navigation";
 import { GameCard } from "@/components/GameCard";
 import { syncGameStatuses } from "@/lib/games";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { GameWithPredictions } from "@/lib/types";
+import type { GameWithPredictions, Group } from "@/lib/types";
 
-export default async function HomePage() {
+export default async function GroupPage({ params }: { params: { slug: string } }) {
   const supabase = createSupabaseServerClient();
   await syncGameStatuses(supabase);
+
+  const { data: group, error: groupError } = await supabase
+    .from("groups")
+    .select("*")
+    .eq("slug", params.slug)
+    .single();
+
+  if (groupError || !group) notFound();
+
+  const typedGroup = group as Group;
   const visibleStatuses = ["soon", "open", "live", "closed", "finished"];
   const fallbackVisibleStatuses = ["open", "live", "closed", "finished"];
   let { data: games, error } = await supabase
     .from("games")
     .select("*, predictions(*)")
+    .eq("group_id", typedGroup.id)
     .in("status", visibleStatuses)
     .order("match_datetime", { ascending: true });
 
@@ -20,6 +32,7 @@ export default async function HomePage() {
     const fallback = await supabase
       .from("games")
       .select("*, predictions(*)")
+      .eq("group_id", typedGroup.id)
       .in("status", fallbackVisibleStatuses)
       .order("match_datetime", { ascending: true });
 
@@ -35,7 +48,7 @@ export default async function HomePage() {
   return (
     <main className="shell">
       <header className="topbar">
-        <Link href="/" className="brand">
+        <Link href={`/grupos/${typedGroup.slug}`} className="brand">
           <span className="brand-mark">B</span>
           <span>Bolao da Copa</span>
         </Link>
@@ -48,11 +61,11 @@ export default async function HomePage() {
 
       <section className="hero">
         <div>
-          <span className="eyebrow">Copa entre amigos</span>
+          <span className="eyebrow">{typedGroup.name}</span>
           <h1>Palpiteiro raiz entra em campo.</h1>
           <p>
-            Manda teu placar, seca a galera e volta depois pra cobrar quem falou demais no
-            pre-jogo.
+            {typedGroup.description ??
+              "Manda teu placar, seca a galera e volta depois pra cobrar quem falou demais no pre-jogo."}
           </p>
           <div className="hero-stats" aria-label="Resumo do bolao">
             <span>
@@ -81,7 +94,7 @@ export default async function HomePage() {
             ))}
           </div>
         ) : (
-          <div className="empty">Nenhum jogo publicado ainda.</div>
+          <div className="empty">Nenhum jogo publicado para este grupo ainda.</div>
         )}
       </section>
     </main>

@@ -17,6 +17,7 @@ export function GameCard({
 }) {
   const winners = findWinningPredictions(game, predictions);
   const effectiveStatus = getEffectiveStatus(game);
+  const canEnter = effectiveStatus !== "soon";
 
   return (
     <article className="card">
@@ -73,9 +74,15 @@ export function GameCard({
           ) : null}
         </div>
       ) : null}
-      <Link className="button" href={`/games/${game.id}`}>
-        Entrar no bolao
-      </Link>
+      {canEnter ? (
+        <Link className="button" href={`/games/${game.id}`}>
+          Entrar no bolao
+        </Link>
+      ) : (
+        <span className="button locked" aria-disabled="true">
+          Palpites em breve
+        </span>
+      )}
     </article>
   );
 }

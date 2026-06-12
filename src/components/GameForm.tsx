@@ -1,9 +1,17 @@
 import { Save } from "lucide-react";
 import { createGame, updateGame } from "@/app/admin/actions";
 import { toDatetimeLocalValue } from "@/lib/format";
-import type { Game } from "@/lib/types";
+import type { Game, Group } from "@/lib/types";
 
-export function GameForm({ game }: { game?: Game }) {
+export function GameForm({
+  game,
+  groups = [],
+  supportsUpcoming = true
+}: {
+  game?: Game;
+  groups?: Group[];
+  supportsUpcoming?: boolean;
+}) {
   const action = game ? updateGame : createGame;
 
   return (
@@ -57,6 +65,19 @@ export function GameForm({ game }: { game?: Game }) {
           </div>
         </div>
       </div>
+      {groups.length ? (
+        <div className="field">
+          <label htmlFor="group_id">Grupo do bolao</label>
+          <select id="group_id" name="group_id" defaultValue={game?.group_id ?? ""}>
+            <option value="">Geral / sem grupo</option>
+            {groups.map((group) => (
+              <option key={group.id} value={group.id}>
+                {group.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
       <div className="field">
         <label htmlFor="phase">Fase</label>
         <input id="phase" name="phase" defaultValue={game?.phase ?? "Fase de grupos"} required />
@@ -87,6 +108,7 @@ export function GameForm({ game }: { game?: Game }) {
         <label htmlFor="status">Status</label>
         <select id="status" name="status" defaultValue={game?.status ?? "draft"}>
           <option value="draft">Rascunho</option>
+          {supportsUpcoming ? <option value="soon">Em breve</option> : null}
           <option value="open">Aberto</option>
           <option value="live">Jogo rolando</option>
           <option value="closed">Fechado</option>
