@@ -50,6 +50,11 @@ function readExistingUrl(formData: FormData, key: string) {
   return value || null;
 }
 
+function readOptionalText(formData: FormData, key: string) {
+  const value = String(formData.get(key) ?? "").trim();
+  return value || null;
+}
+
 function readOptionalUuid(formData: FormData, key: string) {
   const value = String(formData.get(key) ?? "").trim();
   return value || null;
@@ -173,6 +178,8 @@ async function readGamePayload(
     prediction_deadline: predictionDeadline.toISOString(),
     status,
     max_same_score_guesses: maxSameScoreGuesses,
+    entry_fee: readOptionalText(formData, "entry_fee"),
+    pix_info: readOptionalText(formData, "pix_info"),
     home_score: status === "finished" ? homeScore : null,
     away_score: status === "finished" ? awayScore : null
   };

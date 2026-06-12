@@ -130,6 +130,26 @@ export function GameForm({
       </div>
       <div className="score-fields">
         <div className="field">
+          <label htmlFor="entry_fee">Valor do bolao</label>
+          <input
+            id="entry_fee"
+            name="entry_fee"
+            placeholder="Ex: R$ 10,00"
+            defaultValue={game?.entry_fee ?? ""}
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="pix_info">Pix para pagamento</label>
+          <input
+            id="pix_info"
+            name="pix_info"
+            placeholder="Chave Pix ou instrucoes"
+            defaultValue={game?.pix_info ?? ""}
+          />
+        </div>
+      </div>
+      <div className="score-fields">
+        <div className="field">
           <label htmlFor="home_score">Placar real mandante</label>
           <input
             id="home_score"

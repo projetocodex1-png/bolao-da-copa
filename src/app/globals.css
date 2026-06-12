@@ -484,6 +484,22 @@ select {
   font-size: 0.9rem;
 }
 
+.payment-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(3, 10, 12, 0.36);
+  padding: 12px;
+  color: var(--muted);
+}
+
+.payment-info strong {
+  color: var(--text);
+}
+
 .muted-strip {
   color: var(--muted);
 }

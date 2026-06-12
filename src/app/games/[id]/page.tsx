@@ -34,6 +34,7 @@ export default async function GamePage({
   const groupSlug = (data.groups as { slug?: string } | null)?.slug;
   const safeFrom = searchParams.from?.startsWith("/grupos/") ? searchParams.from : null;
   const backHref = safeFrom ?? (groupSlug ? `/grupos/${groupSlug}` : "/");
+  const showPaymentInfo = Boolean(game.entry_fee || game.pix_info);
   const showPredictions =
     effectiveStatus === "open" ||
     effectiveStatus === "live" ||
@@ -70,6 +71,20 @@ export default async function GamePage({
             </span>
             <span>Prazo: {formatDateTime(game.prediction_deadline)}</span>
           </div>
+          {showPaymentInfo ? (
+            <div className="payment-info">
+              {game.entry_fee ? (
+                <span>
+                  <strong>Valor:</strong> {game.entry_fee}
+                </span>
+              ) : null}
+              {game.pix_info ? (
+                <span>
+                  <strong>Pix:</strong> {game.pix_info}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
 
           {effectiveStatus === "finished" ? (
             <div className="result-box winner">
