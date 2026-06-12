@@ -17,6 +17,14 @@ function whatsappLink(value: string | null) {
   return `https://wa.me/${digits}`;
 }
 
+function WhatsAppIcon() {
+  return (
+    <svg aria-hidden="true" className="whatsapp-icon" viewBox="0 0 32 32">
+      <path d="M16 3.5A12.4 12.4 0 0 0 5.4 22.3L4 28l5.8-1.5A12.5 12.5 0 1 0 16 3.5Zm0 22.7a10.2 10.2 0 0 1-5.2-1.4l-.4-.2-3.4.9.9-3.3-.2-.4A10.2 10.2 0 1 1 16 26.2Zm5.7-7.7c-.3-.2-1.8-.9-2.1-1s-.5-.2-.8.2c-.2.3-.9 1-1.1 1.2-.2.2-.4.2-.7.1-.3-.2-1.3-.5-2.5-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.7l.5-.6c.2-.2.2-.3.3-.5.1-.2 0-.4 0-.6s-.8-1.9-1.1-2.6c-.3-.7-.6-.6-.8-.6h-.7c-.2 0-.6.1-.9.4-.3.3-1.2 1.2-1.2 2.9s1.2 3.3 1.4 3.5c.2.2 2.4 3.7 5.8 5.1.8.4 1.4.6 1.9.7.8.3 1.5.2 2.1.1.6-.1 1.8-.7 2.1-1.5.3-.7.3-1.4.2-1.5-.2-.2-.5-.3-.8-.4Z" />
+    </svg>
+  );
+}
+
 export default async function GamePage({
   params,
   searchParams
@@ -93,8 +101,15 @@ export default async function GamePage({
               {receiptWhatsappLink ? (
                 <span>
                   <strong>Enviar comprovante para:</strong>{" "}
-                  <a href={receiptWhatsappLink} target="_blank" rel="noreferrer">
-                    WhatsApp
+                  <a
+                    className="whatsapp-link"
+                    href={receiptWhatsappLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Enviar comprovante pelo WhatsApp"
+                    title="Enviar comprovante pelo WhatsApp"
+                  >
+                    <WhatsAppIcon />
                   </a>
                 </span>
               ) : null}
